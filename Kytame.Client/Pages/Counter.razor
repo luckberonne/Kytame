@@ -1,0 +1,94 @@
+﻿@page "/counter"
+@rendermode InteractiveWebAssembly
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Increment</button>
+<button class="btn btn-danger" @onclick="ResetCount">Reset</button>
+
+@code {
+
+    private HubConnection? hubConnection;
+
+    private int currentCount = 0;
+
+
+
+    protected override async Task OnInitializedAsync()
+
+    {
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/counterhub"))
+            .Build();
+
+
+        hubConnection.On<int>("ReceiveCount", (count) =>
+        {
+            currentCount = count;
+            InvokeAsync(StateHasChanged);
+        });
+        await hubConnection.StartAsync();
+    }
+
+
+
+    private async Task IncrementCount()
+
+    {
+
+        if (hubConnection is not null)
+
+        {
+
+            await hubConnection.SendAsync("IncrementCounter");
+
+        }
+
+    }
+
+
+
+    private async Task ResetCount()
+
+    {
+
+        if (hubConnection is not null)
+
+        {
+
+            await hubConnection.SendAsync("ResetCounter");
+
+        }
+
+    }
+
+
+
+    public bool IsConnected =>
+
+        hubConnection?.State == HubConnectionState.Connected;
+
+
+
+    public async ValueTask DisposeAsync()
+
+    {
+
+        if (hubConnection is not null)
+
+        {
+
+            await hubConnection.DisposeAsync();
+
+        }
+
+    }
+}

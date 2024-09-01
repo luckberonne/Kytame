@@ -1,0 +1,207 @@
+﻿@page "/scoreboard"
+@using Microsoft.AspNetCore.SignalR.Client
+@rendermode InteractiveWebAssembly
+@using System.Timers
+@inject NavigationManager Navigation
+
+<div class="scoreboard-container">
+    <!-- Contenedor para el equipo rojo -->
+    <div class="team-score red">
+        <h2>Kim</h2>
+        <div class="score">@team1Score</div>
+        <button @onclick="IncrementTeam1Score">+</button>
+        <button @onclick="DecrementTeam1Score">-</button>
+        <div>Penalty</div>
+        <div class="penalty">@team1Penalty</div>
+        <button @onclick="IncrementTeam1Penalty">+</button>
+        <button @onclick="DecrementTeam1Penalty">-</button>
+    </div>
+
+    <!-- Contenedor del temporizador -->
+    <div class="timer-container">
+        <h2>Round @currentRound</h2>
+        <div class="timer">@timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")</div>
+        <button @onclick="StartStopTimer">@((timerRunning ? "Stop" : "Start"))</button>
+        <button @onclick="ResetTimer">Reset</button>
+    </div>
+
+    <!-- Contenedor para el equipo azul -->
+    <div class="team-score blue">
+        <h2>Lee</h2>
+        <div class="score">@team2Score</div>
+        <button @onclick="IncrementTeam2Score">+</button>
+        <button @onclick="DecrementTeam2Score">-</button>
+        <div>Penalty</div>
+        <div class="penalty">@team2Penalty</div>
+        <button @onclick="IncrementTeam2Penalty">+</button>
+        <button @onclick="DecrementTeam2Penalty">-</button>
+    </div>
+</div>
+
+@code {
+    private int team1Score = 0;
+    private int team2Score = 0;
+    private int team1Penalty = 0;
+    private int team2Penalty = 0;
+    private int currentRound = 1;
+
+    private Timer timer;
+    private int timerMinutes = 1;
+    private int timerSeconds = 50;
+    private bool timerRunning = false;
+
+    private HubConnection hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize timer
+        timer = new Timer(1000);
+        timer.Elapsed += async (sender, e) => await OnTimerElapsed();
+
+        // Initialize SignalR connection
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/scoreboardHub"))
+            .Build();
+
+        // Register handler for receiving updates from the hub
+        hubConnection.On<int, int, int, int>("ReceiveScoreUpdate", (t1Score, t2Score, t1Penalty, t2Penalty) =>
+        {
+            team1Score = t1Score;
+            team2Score = t2Score;
+            team1Penalty = t1Penalty;
+            team2Penalty = t2Penalty;
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<int, int, bool>("ReceiveTimerUpdate", (minutes, seconds, isRunning) =>
+        {
+            timerMinutes = minutes;
+            timerSeconds = seconds;
+            timerRunning = isRunning;
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<int>("ReceiveRoundUpdate", (round) =>
+        {
+            currentRound = round;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task OnTimerElapsed()
+    {
+        if (timerMinutes == 0 && timerSeconds == 0)
+        {
+            timer.Stop();
+            timerRunning = false;
+        }
+        else
+        {
+            if (timerSeconds == 0)
+            {
+                timerMinutes--;
+                timerSeconds = 59;
+            }
+            else
+            {
+                timerSeconds--;
+            }
+        }
+        await UpdateTimer();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task UpdateScore()
+    {
+        await hubConnection.SendAsync("UpdateScore", team1Score, team2Score, team1Penalty, team2Penalty);
+    }
+
+    private async Task UpdateTimer()
+    {
+        await hubConnection.SendAsync("UpdateTimer", timerMinutes, timerSeconds, timerRunning);
+    }
+
+    private async Task UpdateRound()
+    {
+        await hubConnection.SendAsync("UpdateRound", currentRound);
+    }
+
+    private void IncrementTeam1Score()
+    {
+        team1Score++;
+        UpdateScore();
+    }
+
+    private void DecrementTeam1Score()
+    {
+        if (team1Score > 0) team1Score--;
+        UpdateScore();
+    }
+
+    private void IncrementTeam2Score()
+    {
+        team2Score++;
+        UpdateScore();
+    }
+
+    private void DecrementTeam2Score()
+    {
+        if (team2Score > 0) team2Score--;
+        UpdateScore();
+    }
+
+    private void IncrementTeam1Penalty()
+    {
+        team1Penalty++;
+        UpdateScore();
+    }
+
+    private void DecrementTeam1Penalty()
+    {
+        if (team1Penalty > 0) team1Penalty--;
+        UpdateScore();
+    }
+
+    private void IncrementTeam2Penalty()
+    {
+        team2Penalty++;
+        UpdateScore();
+    }
+
+    private void DecrementTeam2Penalty()
+    {
+        if (team2Penalty > 0) team2Penalty--;
+        UpdateScore();
+    }
+
+    private void StartStopTimer()
+    {
+        timerRunning = !timerRunning;
+        if (timerRunning)
+        {
+            timer.Start();
+        }
+        else
+        {
+            timer.Stop();
+        }
+        UpdateTimer();
+    }
+
+    private void ResetTimer()
+    {
+        timer.Stop();
+        timerRunning = false;
+        timerMinutes = 1;
+        timerSeconds = 50;
+        UpdateTimer();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await hubConnection.DisposeAsync();
+        timer?.Dispose();
+    }
+}
