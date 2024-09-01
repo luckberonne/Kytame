@@ -1,4 +1,4 @@
-﻿@page "/scoreboard"
+﻿@page "/scoreboard/{GroupName}"
 @using Microsoft.AspNetCore.SignalR.Client
 @rendermode InteractiveWebAssembly
 @using System.Timers
@@ -39,6 +39,8 @@
 </div>
 
 @code {
+    [Parameter] public string GroupName { get; set; } = string.Empty;
+
     private int team1Score = 0;
     private int team2Score = 0;
     private int team1Penalty = 0;
@@ -88,6 +90,7 @@
         });
 
         await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinGroup", GroupName); // Unirse al grupo usando el parámetro de ruta
     }
 
     private async Task OnTimerElapsed()
@@ -115,17 +118,17 @@
 
     private async Task UpdateScore()
     {
-        await hubConnection.SendAsync("UpdateScore", team1Score, team2Score, team1Penalty, team2Penalty);
+        await hubConnection.SendAsync("UpdateScore", GroupName, team1Score, team2Score, team1Penalty, team2Penalty);
     }
 
     private async Task UpdateTimer()
     {
-        await hubConnection.SendAsync("UpdateTimer", timerMinutes, timerSeconds, timerRunning);
+        await hubConnection.SendAsync("UpdateTimer", GroupName, timerMinutes, timerSeconds, timerRunning);
     }
 
     private async Task UpdateRound()
     {
-        await hubConnection.SendAsync("UpdateRound", currentRound);
+        await hubConnection.SendAsync("UpdateRound", GroupName, currentRound);
     }
 
     private void IncrementTeam1Score()
@@ -201,6 +204,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        await hubConnection.SendAsync("LeaveGroup", GroupName); // Dejar el grupo al cerrar el componente
         await hubConnection.DisposeAsync();
         timer?.Dispose();
     }

@@ -1,4 +1,4 @@
-﻿@page "/counter"
+﻿@page "/counter/{GroupName}"
 @rendermode InteractiveWebAssembly
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
@@ -14,6 +14,9 @@
 <button class="btn btn-danger" @onclick="ResetCount">Reset</button>
 
 @code {
+    [Parameter] public string GroupName { get; set; } = string.Empty;
+
+
 
     private HubConnection? hubConnection;
 
@@ -26,16 +29,29 @@
     {
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/counterhub"))
+
+            .WithUrl(Navigation.ToAbsoluteUri($"/counterhub"))
+
             .Build();
 
 
+
         hubConnection.On<int>("ReceiveCount", (count) =>
+
         {
+
             currentCount = count;
+
             InvokeAsync(StateHasChanged);
+
         });
+
+
+
         await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync("JoinGroup", GroupName); // Unirse al grupo usando el parámetro de ruta
+
     }
 
 
@@ -48,7 +64,7 @@
 
         {
 
-            await hubConnection.SendAsync("IncrementCounter");
+            await hubConnection.SendAsync("IncrementCounter", GroupName); // Enviar nombre del grupo
 
         }
 
@@ -64,7 +80,7 @@
 
         {
 
-            await hubConnection.SendAsync("ResetCounter");
+            await hubConnection.SendAsync("ResetCounter", GroupName); // Enviar nombre del grupo
 
         }
 
@@ -85,6 +101,8 @@
         if (hubConnection is not null)
 
         {
+
+            await hubConnection.SendAsync("LeaveGroup", GroupName); // Salir del grupo
 
             await hubConnection.DisposeAsync();
 
