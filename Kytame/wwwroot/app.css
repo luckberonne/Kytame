@@ -103,3 +103,83 @@ button {
     button:hover {
         background-color: #ddd;
     }
+
+
+
+
+
+
+
+.scoreboard-control-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.buttons-container {
+    display: flex;
+    gap: 20px;
+}
+
+.team-control {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+    .team-control.red {
+        background-color: #f8d7da;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .team-control.blue {
+        background-color: #d1ecf1;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.large-button {
+    flex: 1;
+    min-width: 150px;
+    height: 50px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+    .large-button:hover {
+        background-color: #0056b3;
+    }
+
+.timer-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.small-button {
+    height: 40px;
+    width: 100px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 5px;
+}
+
+    .small-button:hover {
+        background-color: #218838;
+    }

@@ -1,4 +1,4 @@
-﻿@page "/scoreboard/{GroupName}"
+﻿@page "/scoreboard/{GroupName?}"
 @using Microsoft.AspNetCore.SignalR.Client
 @rendermode InteractiveWebAssembly
 @using System.Timers
@@ -39,7 +39,7 @@
 </div>
 
 @code {
-    [Parameter] public string GroupName { get; set; } = string.Empty;
+    [Parameter] public string? GroupName { get; set; }
 
     private int team1Score = 0;
     private int team2Score = 0;
@@ -56,6 +56,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Si GroupName no está definido o es nulo, generamos uno único
+        if (string.IsNullOrWhiteSpace(GroupName))
+        {
+            GroupName = Guid.NewGuid().ToString();
+            // Redirigir a la URL actualizada con el nuevo GroupName
+            Navigation.NavigateTo($"/scoreboard/{GroupName}", forceLoad: true);
+            return;
+        }
+
         // Initialize timer
         timer = new Timer(1000);
         timer.Elapsed += async (sender, e) => await OnTimerElapsed();

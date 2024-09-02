@@ -1,44 +1,48 @@
-﻿@page "/scoreboard-control"
+﻿@page "/scoreboard-control/{GroupName}"
 @using Microsoft.AspNetCore.SignalR.Client
 @rendermode InteractiveWebAssembly
 @using System.Timers
 @inject NavigationManager Navigation
 
-<div class="scoreboard-container">
-    <!-- Contenedor para el equipo rojo -->
-    <div class="team-score red">
-        <h2>Kim</h2>
-        <div class="score">@team1Score</div>
-        <button @onclick="IncrementTeam1Score">+</button>
-        <button @onclick="DecrementTeam1Score">-</button>
-        <div>Penalty</div>
-        <div class="penalty">@team1Penalty</div>
-        <button @onclick="IncrementTeam1Penalty">+</button>
-        <button @onclick="DecrementTeam1Penalty">-</button>
+<div class="scoreboard-control-container">
+    <!-- Contenedor para los botones de puntaje y penalización -->
+    <div class="buttons-container">
+        <!-- Contenedor para el equipo rojo -->
+        <div class="team-control red">
+            <h2>Kim</h2>
+            <div class="controls">
+                <button @onclick="IncrementTeam1Score" class="large-button">Increase Team 1 Score</button>
+                <button @onclick="DecrementTeam1Score" class="large-button">Decrease Team 1 Score</button>
+                <button @onclick="IncrementTeam1Penalty" class="large-button">Increase Team 1 Penalty</button>
+                <button @onclick="DecrementTeam1Penalty" class="large-button">Decrease Team 1 Penalty</button>
+            </div>
+        </div>
+
+        <!-- Contenedor para el equipo azul -->
+        <div class="team-control blue">
+            <h2>Lee</h2>
+            <div class="controls">
+                <button @onclick="IncrementTeam2Score" class="large-button">Increase Team 2 Score</button>
+                <button @onclick="DecrementTeam2Score" class="large-button">Decrease Team 2 Score</button>
+                <button @onclick="IncrementTeam2Penalty" class="large-button">Increase Team 2 Penalty</button>
+                <button @onclick="DecrementTeam2Penalty" class="large-button">Decrease Team 2 Penalty</button>
+            </div>
+        </div>
     </div>
 
     <!-- Contenedor del temporizador -->
-    <div class="timer-container">
-        <h2>Round @currentRound</h2>
-        <div class="timer">@timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")</div>
-        <button @onclick="StartStopTimer">@((timerRunning ? "Stop" : "Start"))</button>
-        <button @onclick="ResetTimer">Reset</button>
-    </div>
-
-    <!-- Contenedor para el equipo azul -->
-    <div class="team-score blue">
-        <h2>Lee</h2>
-        <div class="score">@team2Score</div>
-        <button @onclick="IncrementTeam2Score">+</button>
-        <button @onclick="DecrementTeam2Score">-</button>
-        <div>Penalty</div>
-        <div class="penalty">@team2Penalty</div>
-        <button @onclick="IncrementTeam2Penalty">+</button>
-        <button @onclick="DecrementTeam2Penalty">-</button>
+    <div class="timer-control">
+        <h2>Timer Control</h2>
+        <div class="controls">
+            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Stop Timer" : "Start Timer"))</button>
+            <button @onclick="ResetTimer" class="small-button">Reset Timer</button>
+        </div>
     </div>
 </div>
 
 @code {
+    [Parameter] public string GroupName { get; set; } = string.Empty;
+
     private int team1Score = 0;
     private int team2Score = 0;
     private int team1Penalty = 0;
@@ -88,6 +92,7 @@
         });
 
         await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinGroup", GroupName); // Unirse al grupo usando el parámetro de ruta
     }
 
     private async Task OnTimerElapsed()
@@ -115,17 +120,17 @@
 
     private async Task UpdateScore()
     {
-        await hubConnection.SendAsync("UpdateScore", team1Score, team2Score, team1Penalty, team2Penalty);
+        await hubConnection.SendAsync("UpdateScore", GroupName, team1Score, team2Score, team1Penalty, team2Penalty);
     }
 
     private async Task UpdateTimer()
     {
-        await hubConnection.SendAsync("UpdateTimer", timerMinutes, timerSeconds, timerRunning);
+        await hubConnection.SendAsync("UpdateTimer", GroupName, timerMinutes, timerSeconds, timerRunning);
     }
 
     private async Task UpdateRound()
     {
-        await hubConnection.SendAsync("UpdateRound", currentRound);
+        await hubConnection.SendAsync("UpdateRound", GroupName, currentRound);
     }
 
     private void IncrementTeam1Score()
@@ -201,6 +206,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        await hubConnection.SendAsync("LeaveGroup", GroupName); // Dejar el grupo al cerrar el componente
         await hubConnection.DisposeAsync();
         timer?.Dispose();
     }
