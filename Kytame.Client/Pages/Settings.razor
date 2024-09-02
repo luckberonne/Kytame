@@ -1,0 +1,57 @@
+﻿@page "/settings"
+@using Microsoft.AspNetCore.Components
+@inject LocalStorageService LocalStorage
+
+<h3>Configuración</h3>
+
+<div class="settings-container">
+    <div class="form-group">
+        <label for="team1Name">Nombre del Equipo 1:</label>
+        <input type="text" id="team1Name" @bind="Team1Name" />
+    </div>
+
+    <div class="form-group">
+        <label for="team2Name">Nombre del Equipo 2:</label>
+        <input type="text" id="team2Name" @bind="Team2Name" />
+    </div>
+
+    <div class="form-group">
+        <label for="timerMinutes">Minutos del Temporizador:</label>
+        <input type="number" id="timerMinutes" @bind="TimerMinutes" min="0" />
+    </div>
+
+    <div class="form-group">
+        <label for="timerSeconds">Segundos del Temporizador:</label>
+        <input type="number" id="timerSeconds" @bind="TimerSeconds" min="0" max="59" />
+    </div>
+
+    <div class="form-group">
+        <label for="pointsPerClick">Puntos por Clic:</label>
+        <input type="number" id="pointsPerClick" @bind="PointsPerClick" min="1" />
+    </div>
+
+    <button @onclick="SaveSettings">Guardar Configuración</button>
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private string Team1Name { get; set; } = "Kim";
+    private string Team2Name { get; set; } = "Lee";
+    private int TimerMinutes { get; set; } = 1;
+    private int TimerSeconds { get; set; } = 50;
+    private int PointsPerClick { get; set; } = 1;
+
+    private async Task SaveSettings()
+    {
+        // Guardar configuraciones en sessionStorage usando el servicio
+        await LocalStorage.SetItemAsync("Team1Name", Team1Name);
+        await LocalStorage.SetItemAsync("Team2Name", Team2Name);
+        await LocalStorage.SetItemAsync("TimerMinutes", TimerMinutes.ToString());
+        await LocalStorage.SetItemAsync("TimerSeconds", TimerSeconds.ToString());
+        await LocalStorage.SetItemAsync("PointsPerClick", PointsPerClick.ToString());
+
+        // Redirigir al marcador después de guardar configuraciones
+        Navigation.NavigateTo($"/scoreboard");
+    }
+}

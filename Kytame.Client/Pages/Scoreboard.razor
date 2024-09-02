@@ -3,11 +3,12 @@
 @rendermode InteractiveWebAssembly
 @using System.Timers
 @inject NavigationManager Navigation
+@inject LocalStorageService LocalStorage
 
 <div class="scoreboard-container">
     <!-- Contenedor para el equipo rojo -->
     <div class="team-score red">
-        <h2>Kim</h2>
+        <h2>@team1Name</h2>
         <div class="score">@team1Score</div>
         <button @onclick="IncrementTeam1Score">+</button>
         <button @onclick="DecrementTeam1Score">-</button>
@@ -27,7 +28,7 @@
 
     <!-- Contenedor para el equipo azul -->
     <div class="team-score blue">
-        <h2>Lee</h2>
+        <h2>@team2Name</h2>
         <div class="score">@team2Score</div>
         <button @onclick="IncrementTeam2Score">+</button>
         <button @onclick="DecrementTeam2Score">-</button>
@@ -40,6 +41,10 @@
 
 @code {
     [Parameter] public string? GroupName { get; set; }
+
+    private string team1Name = "Kim";
+    private string team2Name = "Lee";
+    private int pointsPerClick = 1;
 
     private int team1Score = 0;
     private int team2Score = 0;
@@ -56,6 +61,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Cargar configuraciones desde sessionStorage usando el servicio
+        if (await LocalStorage.GetItemAsync("Team1Name") != null)
+        {
+            team1Name = await LocalStorage.GetItemAsync("Team1Name");
+            team2Name = await LocalStorage.GetItemAsync("Team2Name");
+            timerMinutes = int.Parse(await LocalStorage.GetItemAsync("TimerMinutes"));
+            timerSeconds = int.Parse(await LocalStorage.GetItemAsync("TimerSeconds"));
+            pointsPerClick = int.Parse(await LocalStorage.GetItemAsync("PointsPerClick"));
+        }
+
         // Si GroupName no está definido o es nulo, generamos uno único
         if (string.IsNullOrWhiteSpace(GroupName))
         {
@@ -142,25 +157,25 @@
 
     private void IncrementTeam1Score()
     {
-        team1Score++;
+        team1Score += pointsPerClick;
         UpdateScore();
     }
 
     private void DecrementTeam1Score()
     {
-        if (team1Score > 0) team1Score--;
+        if (team1Score > 0) team1Score -= pointsPerClick;
         UpdateScore();
     }
 
     private void IncrementTeam2Score()
     {
-        team2Score++;
+        team2Score += pointsPerClick;
         UpdateScore();
     }
 
     private void DecrementTeam2Score()
     {
-        if (team2Score > 0) team2Score--;
+        if (team2Score > 0) team2Score -= pointsPerClick;
         UpdateScore();
     }
 
