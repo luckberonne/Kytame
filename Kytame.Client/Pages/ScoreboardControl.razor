@@ -5,9 +5,7 @@
 @inject NavigationManager Navigation
 
 <div class="scoreboard-control-container">
-    <!-- Contenedor para los botones de puntaje y penalización -->
     <div class="buttons-container">
-        <!-- Contenedor para el equipo rojo -->
         <div class="team-control red">
             <h2>Kim</h2>
             <div class="controls">
@@ -18,7 +16,6 @@
             </div>
         </div>
 
-        <!-- Contenedor para el equipo azul -->
         <div class="team-control blue">
             <h2>Lee</h2>
             <div class="controls">
@@ -30,7 +27,6 @@
         </div>
     </div>
 
-    <!-- Contenedor del temporizador -->
     <div class="timer-control">
         <h2>Timer Control</h2>
         <div class="controls">
@@ -58,7 +54,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Initialize timer
         timer = new Timer(1000);
         timer.Elapsed += async (sender, e) => await OnTimerElapsed();
 
