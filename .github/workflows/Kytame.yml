@@ -1,4 +1,4 @@
-name: Compilar e implementar la aplicación de .NET Core en la aplicación web Kytame
+name: Compilar e implementar la aplicación de .NET Core en la aplicación web Kytame
 on:
   push:
     branches:
@@ -44,5 +44,5 @@ jobs:
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.Kytame_578D }}
+        publish-profile: ${{ secrets.Kytame_4214 }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
