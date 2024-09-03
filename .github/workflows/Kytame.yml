@@ -2,38 +2,49 @@ name: Compilar e implementar la aplicación de .NET Core en la aplicación web 
 on:
   push:
     branches:
-    - master
+      - master
+
 env:
   AZURE_WEBAPP_NAME: Kytame
-  AZURE_WEBAPP_PACKAGE_PATH: Kytame\published
+  AZURE_WEBAPP_PACKAGE_PATH: Kytame/published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
   WORKING_DIRECTORY: Kytame
+
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
-    - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
-    - name: Test
-      run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
-    - name: Publish
-      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
-    - name: Publish Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: webapp
-        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+
+      - name: Restore
+        run: dotnet restore "${{ env.WORKING_DIRECTORY }}"  # Restaura las dependencias
+
+      - name: Build
+        run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore  # Compila el proyecto
+
+      - name: Test
+        run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build  # Ejecuta los tests
+
+      - name: Publish
+        run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"  # Publica el proyecto
+
+      - name: Publish Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
   deploy:
     runs-on: windows-latest
     needs: build
+
     steps:
     - name: Download artifact from build job
       uses: actions/download-artifact@v3
