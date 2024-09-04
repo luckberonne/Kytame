@@ -52,4 +52,13 @@ public class ScoreboardHub : Hub
             await Clients.Group(groupName).SendAsync("ReceiveRoundUpdate", round);
         }
     }
+
+    public Task<bool> AreClientsConnected(string groupName)
+    {
+        if (GroupConnections.TryGetValue(groupName, out var connections))
+        {
+            return Task.FromResult(connections.Count > 0);
+        }
+        return Task.FromResult(false);
+    }
 }

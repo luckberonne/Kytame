@@ -51,28 +51,45 @@ h1:focus {
 }
 
 
+.container {
+    background-color: rgba(128, 128, 128, 0.1);
+    border-radius: 5px;
+    padding: 10px;
+    height: calc(100vh - 3.5rem - 40px);
+}
+
 .scoreboard-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background-color: black;
+    background: url('Assets/fondo.png') center center no-repeat; /* Agrega la ruta de tu imagen aquí */
+    background-size: contain; /* Hace que la imagen cubra todo el fondo */
     color: white;
     font-family: 'Digital-7 Mono', sans-serif; /* Usa una fuente de estilo digital */
+    position: relative;
+    height: 100%;
+}
+
+.team-score, .timer-container, .qr-container {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente para los bloques de contenido */
+    border-radius: 10px; /* Bordes redondeados para un mejor aspecto */
 }
 
 .team-score {
     text-align: center;
     padding: 20px;
-    width: 200px;
+    width: 250px;
+    height: 100%;
 }
 
     .team-score.red {
-        background-color: red;
+        background-color: rgba(255, 0, 0, 0.9); /* Fondo rojo semitransparente */
     }
 
     .team-score.blue {
-        background-color: blue;
+        background-color: rgba(0, 0, 255, 0.9); /* Fondo azul semitransparente */
     }
 
 .score, .penalty {
@@ -93,10 +110,13 @@ h1:focus {
 button {
     font-size: 1.5rem;
     padding: 10px;
+    width: 50px;
+    height: 50px;
     margin: 5px;
     background-color: white;
     color: black;
     border: none;
+    border-radius: 5px;
     cursor: pointer;
 }
 
@@ -104,6 +124,46 @@ button {
         background-color: #ddd;
     }
 
+.timer-container button {
+    font-size: 1.5rem;
+    border-radius: 5px;
+    padding: 10px;
+    width: 120px;
+    height: 50px;
+    margin: 5px;
+    background-color: white;
+    color: black;
+    border: none;
+    cursor: pointer;
+}
+
+    .timer-container button:hover {
+        background-color: #ddd;
+    }
+
+
+.qr-container {
+    width: 200px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+    .qr-container h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .qr-container img {
+        width: 130px;
+        height: 130px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background-color: white;
+        border-radius: 10px;
+    }
 
 
 
@@ -182,4 +242,61 @@ button {
 
     .small-button:hover {
         background-color: #218838;
+    }
+
+
+
+
+
+.config-container {
+    background-color: rgba(128, 128, 128, 0.1);
+    border-radius: 5px;
+    padding: 20px;
+    height: calc(100vh - 3.5rem - 40px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.config-title {
+    margin-bottom: 20px;
+    color: #333;
+    font-family: 'Digital-7 Mono', sans-serif;
+}
+
+.config-form-group {
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.config-label {
+    display: block;
+    margin-bottom: 5px;
+    font-family: 'Digital-7 Mono', sans-serif;
+    color: #333;
+}
+
+.config-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.config-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    width:250px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Digital-7 Mono', sans-serif;
+}
+
+    .config-button:hover {
+        background-color: #0056b3;
     }

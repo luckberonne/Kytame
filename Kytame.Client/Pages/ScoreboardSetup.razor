@@ -1,0 +1,107 @@
+﻿@page "/"
+@rendermode InteractiveWebAssembly
+@using QRCoder
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.SignalR.Client
+
+<div class="config-container">
+    <h3 class="config-title">Configuración de Marcador</h3>
+
+    <div class="config-form-group">
+        <label for="team1Name" class="config-label">Nombre del Equipo 1:</label>
+        <input id="team1Name" @bind="team1Name" class="config-input" />
+    </div>
+
+    <div class="config-form-group">
+        <label for="team2Name" class="config-label">Nombre del Equipo 2:</label>
+        <input id="team2Name" @bind="team2Name" class="config-input" />
+    </div>
+
+    <button @onclick="StartGame" class="config-button">Iniciar Juego</button>
+
+    <div class="qr-container">
+        <h2>QR Code for URL</h2>
+        @if (!string.IsNullOrEmpty(qrCodeUrl))
+        {
+            <img src="@qrCodeUrl" alt="QR Code" />
+        }
+        else
+        {
+            <p>Loading QR code...</p>
+        }
+    </div>
+</div>
+
+@code {
+    private string? qrCodeUrl;
+    private string team1Name = "Participante 1";
+    private string team2Name = "Participante 2";
+
+    private async Task StartGame()
+    {
+        string groupName = Guid.NewGuid().ToString();
+        var uri = new Uri(Navigation.Uri);
+        var baseUri = new Uri(uri.GetLeftPart(UriPartial.Authority));
+        var qrCodeUrl = new Uri(baseUri, $"/scoreboard-control/{groupName}?team1Name={team1Name}&team2Name={team2Name}").ToString();
+
+        // Generate the QR code and update the image URL
+        GenerateQRCode(qrCodeUrl);
+
+        // Check if there are clients connected or wait for 2 minutes
+        bool isConnected = await WaitForConnectionAsync(groupName, TimeSpan.FromMinutes(2));
+
+        if (isConnected)
+        {
+            Navigation.NavigateTo($"/scoreboard/{groupName}?team1Name={team1Name}&team2Name={team2Name}");
+        }
+    }
+
+    private void GenerateQRCode(string qrCodeUrl)
+    {
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(qrCodeUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        var qrCodeBytes = qrCode.GetGraphic(20);
+
+        qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+
+        // Update the component's QR code URL
+        this.qrCodeUrl = qrCodeUrl;
+    }
+
+    private async Task<bool> WaitForConnectionAsync(string groupName, TimeSpan timeout)
+    {
+        var cancellationTokenSource = new CancellationTokenSource(timeout);
+        bool isConnected = false;
+
+        while (!cancellationTokenSource.Token.IsCancellationRequested)
+        {
+            isConnected = await IsClientConnectedAsync(groupName);
+
+            if (isConnected)
+            {
+                break;
+            }
+
+            await Task.Delay(1000); // Check every second
+        }
+
+        return isConnected;
+    }
+
+    private async Task<bool> IsClientConnectedAsync(string groupName)
+    {
+        // Use a SignalR client to call a method on the hub to check if clients are connected
+        var hubConnection = new HubConnectionBuilder()
+            .WithUrl("ScoreboardHub") // Replace with your SignalR hub URL
+            .Build();
+
+        await hubConnection.StartAsync();
+
+        var result = await hubConnection.InvokeAsync<bool>("AreClientsConnected", groupName);
+        await hubConnection.StopAsync();
+
+        return result;
+    }
+}
+ScoreboardHub

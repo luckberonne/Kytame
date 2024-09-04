@@ -7,22 +7,22 @@
 <div class="scoreboard-control-container">
     <div class="buttons-container">
         <div class="team-control red">
-            <h2>Kim</h2>
+            <h2>Participante 1</h2>
             <div class="controls">
-                <button @onclick="IncrementTeam1Score" class="large-button">Increase Team 1 Score</button>
-                <button @onclick="DecrementTeam1Score" class="large-button">Decrease Team 1 Score</button>
-                <button @onclick="IncrementTeam1Penalty" class="large-button">Increase Team 1 Penalty</button>
-                <button @onclick="DecrementTeam1Penalty" class="large-button">Decrease Team 1 Penalty</button>
+                <button @onclick="IncrementTeam1Score" class="large-button">Punto +</button>
+                <button @onclick="DecrementTeam1Score" class="large-button">Punto -</button>
+                <button @onclick="IncrementTeam1Penalty" class="large-button">Penalty +</button>
+                <button @onclick="DecrementTeam1Penalty" class="large-button">Penalty -</button>
             </div>
         </div>
 
         <div class="team-control blue">
-            <h2>Lee</h2>
+            <h2>Participante 2</h2>
             <div class="controls">
-                <button @onclick="IncrementTeam2Score" class="large-button">Increase Team 2 Score</button>
-                <button @onclick="DecrementTeam2Score" class="large-button">Decrease Team 2 Score</button>
-                <button @onclick="IncrementTeam2Penalty" class="large-button">Increase Team 2 Penalty</button>
-                <button @onclick="DecrementTeam2Penalty" class="large-button">Decrease Team 2 Penalty</button>
+                <button @onclick="IncrementTeam2Score" class="large-button">Punto +</button>
+                <button @onclick="DecrementTeam2Score" class="large-button">Punto -</button>
+                <button @onclick="IncrementTeam2Penalty" class="large-button">Penalty 1</button>
+                <button @onclick="DecrementTeam2Penalty" class="large-button">Penalty -</button>
             </div>
         </div>
     </div>
@@ -30,7 +30,7 @@
     <div class="timer-control">
         <h2>Timer Control</h2>
         <div class="controls">
-            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Stop Timer" : "Start Timer"))</button>
+            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Parar Timer" : "Empeezar Timer"))</button>
             <button @onclick="ResetTimer" class="small-button">Reset Timer</button>
         </div>
     </div>
