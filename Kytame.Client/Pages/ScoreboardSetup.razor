@@ -19,17 +19,13 @@
 
     <button @onclick="StartGame" class="config-button">Iniciar Juego</button>
 
-    <div class="qr-container">
-        <h2>QR Code for URL</h2>
         @if (!string.IsNullOrEmpty(qrCodeUrl))
         {
+    <div class="qr-container">
+        <h2>QR Code for URL</h2>
             <img src="@qrCodeUrl" alt="QR Code" />
-        }
-        else
-        {
-            <p>Loading QR code...</p>
-        }
     </div>
+        }
 </div>
 
 @code {
@@ -44,10 +40,8 @@
         var baseUri = new Uri(uri.GetLeftPart(UriPartial.Authority));
         var qrCodeUrl = new Uri(baseUri, $"/scoreboard-control/{groupName}?team1Name={team1Name}&team2Name={team2Name}").ToString();
 
-        // Generate the QR code and update the image URL
         GenerateQRCode(qrCodeUrl);
 
-        // Check if there are clients connected or wait for 2 minutes
         bool isConnected = await WaitForConnectionAsync(groupName, TimeSpan.FromMinutes(2));
 
         if (isConnected)
@@ -56,8 +50,7 @@
         }
         else
         {
-            // Handle the case where no clients are connected
-            // For example, show an error message to the user
+  
         }
     }
 
@@ -68,7 +61,6 @@
         using var qrCode = new PngByteQRCode(qrCodeData);
         var qrCodeBytes = qrCode.GetGraphic(20);
 
-        // Update the component's QR code URL
         this.qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
     }
 
@@ -86,7 +78,7 @@
                 break;
             }
 
-            await Task.Delay(1000); // Check every second
+            await Task.Delay(1000);
         }
 
         return isConnected;
@@ -95,7 +87,7 @@
     private async Task<bool> IsClientConnectedAsync(string groupName)
     {
         var hubConnection = new HubConnectionBuilder()
-            .WithUrl(new Uri(Navigation.ToAbsoluteUri("/scoreboardHub").ToString())) // Update with correct SignalR Hub URL
+            .WithUrl(new Uri(Navigation.ToAbsoluteUri("/scoreboardHub").ToString())) 
             .Build();
 
         try
@@ -106,7 +98,6 @@
         }
         catch (Exception ex)
         {
-            // Handle exceptions (e.g., logging or user notification)
             Console.WriteLine($"Error checking client connection: {ex.Message}");
             return false;
         }

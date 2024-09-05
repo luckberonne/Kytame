@@ -16,7 +16,6 @@ public class ScoreboardHub : Hub
 
     public override async Task OnDisconnectedAsync(System.Exception exception)
     {
-        // Remove connection from all groups the client was part of
         foreach (var group in GroupConnections.Where(g => g.Value.Contains(Context.ConnectionId)).ToList())
         {
             group.Value.Remove(Context.ConnectionId);
