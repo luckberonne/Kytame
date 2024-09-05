@@ -54,6 +54,11 @@
         {
             Navigation.NavigateTo($"/scoreboard/{groupName}?team1Name={team1Name}&team2Name={team2Name}");
         }
+        else
+        {
+            // Handle the case where no clients are connected
+            // For example, show an error message to the user
+        }
     }
 
     private void GenerateQRCode(string qrCodeUrl)
@@ -63,10 +68,8 @@
         using var qrCode = new PngByteQRCode(qrCodeData);
         var qrCodeBytes = qrCode.GetGraphic(20);
 
-        qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
-
         // Update the component's QR code URL
-        this.qrCodeUrl = qrCodeUrl;
+        this.qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
     }
 
     private async Task<bool> WaitForConnectionAsync(string groupName, TimeSpan timeout)
@@ -91,17 +94,25 @@
 
     private async Task<bool> IsClientConnectedAsync(string groupName)
     {
-        // Use a SignalR client to call a method on the hub to check if clients are connected
         var hubConnection = new HubConnectionBuilder()
-            .WithUrl("ScoreboardHub") // Replace with your SignalR hub URL
+            .WithUrl(new Uri(Navigation.ToAbsoluteUri("/scoreboardHub").ToString())) // Update with correct SignalR Hub URL
             .Build();
 
-        await hubConnection.StartAsync();
-
-        var result = await hubConnection.InvokeAsync<bool>("AreClientsConnected", groupName);
-        await hubConnection.StopAsync();
-
-        return result;
+        try
+        {
+            await hubConnection.StartAsync();
+            var result = await hubConnection.InvokeAsync<bool>("AreClientsConnected", groupName);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions (e.g., logging or user notification)
+            Console.WriteLine($"Error checking client connection: {ex.Message}");
+            return false;
+        }
+        finally
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 }
-ScoreboardHub
