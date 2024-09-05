@@ -18,14 +18,16 @@
     </div>
 
     <button @onclick="StartGame" class="config-button">Iniciar Juego</button>
+    <button @onclick="SkipConnection" class="config-button">Omitir Conexión</button>
 
-        @if (!string.IsNullOrEmpty(qrCodeUrl))
-        {
-    <div class="qr-container">
-        <h2>QR Code for URL</h2>
-            <img src="@qrCodeUrl" alt="QR Code" />
-    </div>
-        }
+
+    @if (!string.IsNullOrEmpty(qrCodeUrl))
+    {
+        <div class="qr-container">
+            <h2>QR Code for URL</h2>
+                <img src="@qrCodeUrl" alt="QR Code" />
+        </div>
+    }
 </div>
 
 @code {
@@ -62,6 +64,12 @@
         var qrCodeBytes = qrCode.GetGraphic(20);
 
         this.qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+    }
+
+    private void SkipConnection()
+    {
+        string groupName = Guid.NewGuid().ToString();
+        Navigation.NavigateTo($"/scoreboard/{groupName}?team1Name={team1Name}&team2Name={team2Name}");
     }
 
     private async Task<bool> WaitForConnectionAsync(string groupName, TimeSpan timeout)
