@@ -12,7 +12,7 @@ public class ScoreboardHub : Hub
 
         if (!GroupStates.ContainsKey(groupName))
         {
-            GroupStates[groupName] = (0, 0, 0, 0, 1, 50, false, 1); // Initialize default values
+            GroupStates[groupName] = (0, 0, 0, 0, 2, 00, false, 1); // Initialize default values
         }
 
         var state = GroupStates[groupName];

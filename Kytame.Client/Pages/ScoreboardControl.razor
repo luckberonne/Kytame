@@ -5,33 +5,56 @@
 @inject NavigationManager Navigation
 
 <div class="scoreboard-control-container">
-    <div class="buttons-container">
-        <div class="team-control red">
-            <h2>Participante 1</h2>
-            <div class="controls">
-                <button @onclick="IncrementTeam1Score" class="large-button">Punto +</button>
-                <button @onclick="DecrementTeam1Score" class="large-button">Punto -</button>
-                <button @onclick="IncrementTeam1Penalty" class="large-button">Penalty +</button>
-                <button @onclick="DecrementTeam1Penalty" class="large-button">Penalty -</button>
-            </div>
-        </div>
+    <div class="team-control red">
+        <h2>Participante 1</h2>
+        <div class="controls">
+            <button @onclick="() => AddPoints(ref team1Score, 1)" class="large-button">Punto +1</button>
+            <button @onclick="() => AddPoints(ref team1Score, 2)" class="large-button">Punto +2</button>
+            <button @onclick="() => AddPoints(ref team1Score, 4)" class="large-button">Punto +4</button>
+            <button @onclick="() => AddPoints(ref team1Score, 3)" class="large-button">Punto +3</button>
+            <button @onclick="() => AddPoints(ref team1Score, 5)" class="large-button">Punto +5</button>
 
-        <div class="team-control blue">
-            <h2>Participante 2</h2>
-            <div class="controls">
-                <button @onclick="IncrementTeam2Score" class="large-button">Punto +</button>
-                <button @onclick="DecrementTeam2Score" class="large-button">Punto -</button>
-                <button @onclick="IncrementTeam2Penalty" class="large-button">Penalty 1</button>
-                <button @onclick="DecrementTeam2Penalty" class="large-button">Penalty -</button>
+            <!-- Línea divisoria -->
+            <div class="penalty-section">
+                <button @onclick="() => ModifyPenalty(ref team1Penalty, 1)" class="large-button">Penalty +</button>
+                <button @onclick="() => ModifyPenalty(ref team1Penalty, -1)" class="large-button">Penalty -</button>
             </div>
         </div>
     </div>
 
-    <div class="timer-control">
-        <h2>Timer Control</h2>
+    <div class="team-control blue">
+        <h2>Participante 2</h2>
         <div class="controls">
-            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Parar Timer" : "Empeezar Timer"))</button>
+            <button @onclick="() => AddPoints(ref team2Score, 1)" class="large-button">Punto +1</button>
+            <button @onclick="() => AddPoints(ref team2Score, 2)" class="large-button">Punto +2</button>
+            <button @onclick="() => AddPoints(ref team2Score, 4)" class="large-button">Punto +4</button>
+            <button @onclick="() => AddPoints(ref team2Score, 3)" class="large-button">Punto +3</button>
+            <button @onclick="() => AddPoints(ref team2Score, 5)" class="large-button">Punto +5</button>
+
+            <!-- Línea divisoria -->
+            <div class="penalty-section">
+                <button @onclick="() => ModifyPenalty(ref team2Penalty, 1)" class="large-button">Penalty +</button>
+                <button @onclick="() => ModifyPenalty(ref team2Penalty, -1)" class="large-button">Penalty -</button>
+            </div>
+        </div>
+    </div>
+    <div class="timer-control">
+        <h2>Control de Temporizador</h2>
+        <div class="controls">
+            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Parar Timer" : "Empezar Timer"))</button>
             <button @onclick="ResetTimer" class="small-button">Reset Timer</button>
+            <button @onclick="UndoLastAction" class="small-button">Deshacer Acción</button>
+        </div>
+        <div class="timer-display">
+            @timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")
+        </div>
+    </div>
+
+    <div class="round-control">
+        <h2>Control de Round</h2>
+        <div class="controls">
+            <button @onclick="PreviousRound" class="small-button" disabled="@isFirstRound">Anterior Round</button>
+            <button @onclick="NextRound" class="small-button" disabled="@isLastRound">Siguiente Round</button>
         </div>
     </div>
 </div>
@@ -46,23 +69,26 @@
     private int currentRound = 1;
 
     private Timer timer;
-    private int timerMinutes = 1;
-    private int timerSeconds = 50;
+    private int timerMinutes = 2;
+    private int timerSeconds = 00;
     private bool timerRunning = false;
 
     private HubConnection hubConnection;
+
+    private Stack<(string Team, int Points)> actionHistory = new Stack<(string Team, int Points)>();
+
+    private bool isFirstRound => currentRound == 1;
+    private bool isLastRound => currentRound == 3;
 
     protected override async Task OnInitializedAsync()
     {
         timer = new Timer(1000);
         timer.Elapsed += async (sender, e) => await OnTimerElapsed();
 
-        // Initialize SignalR connection
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/scoreboardHub"))
             .Build();
 
-        // Register handler for receiving updates from the hub
         hubConnection.On<int, int, int, int>("ReceiveScoreUpdate", (t1Score, t2Score, t1Penalty, t2Penalty) =>
         {
             team1Score = t1Score;
@@ -87,7 +113,7 @@
         });
 
         await hubConnection.StartAsync();
-        await hubConnection.SendAsync("JoinGroup", GroupName); // Unirse al grupo usando el parámetro de ruta
+        await hubConnection.SendAsync("JoinGroup", GroupName);
     }
 
     private async Task OnTimerElapsed()
@@ -128,51 +154,16 @@
         await hubConnection.SendAsync("UpdateRound", GroupName, currentRound);
     }
 
-    private void IncrementTeam1Score()
+    private void AddPoints(ref int score, int points)
     {
-        team1Score++;
+        score += points;
+        actionHistory.Push((score == team1Score ? "Team1" : "Team2", points));
         UpdateScore();
     }
 
-    private void DecrementTeam1Score()
+    private void ModifyPenalty(ref int penalty, int amount)
     {
-        if (team1Score > 0) team1Score--;
-        UpdateScore();
-    }
-
-    private void IncrementTeam2Score()
-    {
-        team2Score++;
-        UpdateScore();
-    }
-
-    private void DecrementTeam2Score()
-    {
-        if (team2Score > 0) team2Score--;
-        UpdateScore();
-    }
-
-    private void IncrementTeam1Penalty()
-    {
-        team1Penalty++;
-        UpdateScore();
-    }
-
-    private void DecrementTeam1Penalty()
-    {
-        if (team1Penalty > 0) team1Penalty--;
-        UpdateScore();
-    }
-
-    private void IncrementTeam2Penalty()
-    {
-        team2Penalty++;
-        UpdateScore();
-    }
-
-    private void DecrementTeam2Penalty()
-    {
-        if (team2Penalty > 0) team2Penalty--;
+        penalty = Math.Max(0, penalty + amount);
         UpdateScore();
     }
 
@@ -199,9 +190,46 @@
         UpdateTimer();
     }
 
+    private void NextRound()
+    {
+        if (currentRound < 3)
+        {
+            currentRound++;
+            ResetTimer();
+            UpdateRound();
+        }
+    }
+
+    private void PreviousRound()
+    {
+        if (currentRound > 1)
+        {
+            currentRound--;
+            ResetTimer();
+            UpdateRound();
+        }
+    }
+
+    private void UndoLastAction()
+    {
+        if (actionHistory.Count > 0)
+        {
+            var lastAction = actionHistory.Pop();
+            if (lastAction.Team == "Team1")
+            {
+                team1Score = Math.Max(0, team1Score - lastAction.Points);
+            }
+            else if (lastAction.Team == "Team2")
+            {
+                team2Score = Math.Max(0, team2Score - lastAction.Points);
+            }
+            UpdateScore();
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
-        await hubConnection.SendAsync("LeaveGroup", GroupName); // Dejar el grupo al cerrar el componente
+        await hubConnection.SendAsync("LeaveGroup", GroupName);
         await hubConnection.DisposeAsync();
         timer?.Dispose();
     }

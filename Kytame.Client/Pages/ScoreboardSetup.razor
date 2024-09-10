@@ -18,9 +18,6 @@
     </div>
 
     <button @onclick="StartGame" class="config-button">Iniciar Juego</button>
-    <button @onclick="SkipConnection" class="config-button">Omitir Conexión</button>
-
-
     @if (!string.IsNullOrEmpty(qrCodeUrl))
     {
         <div class="qr-container">
@@ -28,6 +25,9 @@
                 <img src="@qrCodeUrl" alt="QR Code" />
         </div>
     }
+    <button @onclick="SkipConnection" class="config-button">Omitir Conexión</button>
+
+
 </div>
 
 @code {

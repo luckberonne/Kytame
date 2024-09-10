@@ -12,7 +12,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kytame.Client\Kytame.Client.csproj" />
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.25.2" />
   </ItemGroup>
 
 </Project>

@@ -7,39 +7,43 @@
 @inject NavigationManager Navigation
 
 <div class="container">
-<div class="scoreboard-container">
-    <!-- Contenedor para el equipo rojo -->
-    <div class="team-score red">
-        <h2>@team1Name</h2>
-        <div class="score">@team1Score</div>
-        <button @onclick="IncrementTeam1Score">+</button>
-        <button @onclick="DecrementTeam1Score">-</button>
-        <div>Penalty</div>
-        <div class="penalty">@team1Penalty</div>
-        <button @onclick="IncrementTeam1Penalty">+</button>
-        <button @onclick="DecrementTeam1Penalty">-</button>
-    </div>
+    <div class="scoreboard-container">
+        <div class="team-score red">
+            <h2>@team1Name</h2>
+            <div class="score">@team1Score</div>
+            <button @onclick="() => AddPointsTeam1(1)" title="Golpe con puño en el tronco (1 punto)">+1</button>
+            <button @onclick="() => AddPointsTeam1(2)" title="Patada en el tronco (2 puntos)">+2</button>
+            <button @onclick="() => AddPointsTeam1(4)" title="Patada con giro en el tronco (4 puntos)">+4</button>
+            <button @onclick="() => AddPointsTeam1(3)" title="Patada a la cabeza (3 puntos)">+3</button>
+            <button @onclick="() => AddPointsTeam1(5)" title="Patada con giro a la cabeza (5 puntos)">+5</button>
+            <div>Penalty</div>
+            <div class="penalty">@team1Penalty</div>
+            <button @onclick="IncrementTeam1Penalty">+</button>
+            <button @onclick="DecrementTeam1Penalty">-</button>
+        </div>
 
-    <!-- Contenedor del temporizador -->
-    <div class="timer-container">
-        <h2>Round @currentRound</h2>
-        <div class="timer">@timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")</div>
-        <button @onclick="StartStopTimer">@((timerRunning ? "Parar" : "Empezar"))</button>
-        <button @onclick="ResetTimer">Reset</button>
-    </div>
+        <div class="timer-container">
+            <h2>Round @currentRound de 3</h2>
+            <div class="timer">@timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")</div>
+            <button @onclick="StartStopTimer">@((timerRunning ? "Parar" : "Empezar"))</button>
+            <button @onclick="ResetRound">Reset</button>
+            <button @onclick="UndoLastAction">Deshacer</button>
+        </div>
 
-    <!-- Contenedor para el equipo azul -->
-    <div class="team-score blue">
-        <h2>@team2Name</h2>
-        <div class="score">@team2Score</div>
-        <button @onclick="IncrementTeam2Score">+</button>
-        <button @onclick="DecrementTeam2Score">-</button>
-        <div>Penalty</div>
-        <div class="penalty">@team2Penalty</div>
-        <button @onclick="IncrementTeam2Penalty">+</button>
-        <button @onclick="DecrementTeam2Penalty">-</button>
+        <div class="team-score blue">
+            <h2>@team2Name</h2>
+            <div class="score">@team2Score</div>
+            <button @onclick="() => AddPointsTeam2(1)" title="Golpe con puño en el tronco (1 punto)">+1</button>
+            <button @onclick="() => AddPointsTeam2(2)" title="Patada en el tronco (2 puntos)">+2</button>
+            <button @onclick="() => AddPointsTeam2(4)" title="Patada con giro en el tronco (4 puntos)">+4</button>
+            <button @onclick="() => AddPointsTeam2(3)" title="Patada a la cabeza (3 puntos)">+3</button>
+            <button @onclick="() => AddPointsTeam2(5)" title="Patada con giro a la cabeza (5 puntos)">+5</button>
+            <div>Penalty</div>
+            <div class="penalty">@team2Penalty</div>
+            <button @onclick="IncrementTeam2Penalty">+</button>
+            <button @onclick="DecrementTeam2Penalty">-</button>
+        </div>
     </div>
-</div>
 </div>
 
 @code {
@@ -52,18 +56,21 @@
     private int team1Penalty = 0;
     private int team2Penalty = 0;
     private int currentRound = 1;
+    private const int totalRounds = 3;
+    private bool isFirstRound => currentRound == 1;
+    private bool isLastRound => currentRound == totalRounds;
 
     private Timer timer;
-    private int timerMinutes = 1;
-    private int timerSeconds = 50;
+    private int timerMinutes = 2;
+    private int timerSeconds = 0;
     private bool timerRunning = false;
-    private string? qrCodeUrl;
 
     private HubConnection hubConnection;
 
+    private Stack<(string Team, int Points)> actionHistory = new Stack<(string Team, int Points)>();
+
     protected override async Task OnInitializedAsync()
     {
-        // Obtener nombres de los equipos de los parámetros de consulta
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("team1Name", out var team1))
         {
@@ -74,25 +81,20 @@
             team2Name = team2;
         }
 
-        // Si GroupName no está definido o es nulo, generamos uno único
         if (string.IsNullOrWhiteSpace(GroupName))
         {
             GroupName = Guid.NewGuid().ToString();
-            // Redirigir a la URL actualizada con el nuevo GroupName
             Navigation.NavigateTo($"/scoreboard/{GroupName}", forceLoad: true);
             return;
         }
 
-        // Inicializar el temporizador
         timer = new Timer(1000);
         timer.Elapsed += async (sender, e) => await OnTimerElapsed();
 
-        // Inicializar la conexión SignalR
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/scoreboardHub"))
             .Build();
 
-        // Registrar manejador para recibir actualizaciones desde el hub
         hubConnection.On<int, int, int, int>("ReceiveScoreUpdate", (t1Score, t2Score, t1Penalty, t2Penalty) =>
         {
             team1Score = t1Score;
@@ -117,7 +119,7 @@
         });
 
         await hubConnection.StartAsync();
-        await hubConnection.SendAsync("JoinGroup", GroupName); // Unirse al grupo usando el parámetro de ruta
+        await hubConnection.SendAsync("JoinGroup", GroupName);
     }
 
     private async Task OnTimerElapsed()
@@ -143,18 +145,6 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void GenerateQRCode()
-    {
-        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        using var qrGenerator = new QRCodeGenerator();
-        using var qrCodeData = qrGenerator.CreateQrCode(uri.ToString().Replace("scoreboard", "scoreboard-control"), QRCodeGenerator.ECCLevel.Q);
-        using var qrCode = new PngByteQRCode(qrCodeData);
-        var qrCodeBytes = qrCode.GetGraphic(20);
-
-        // Convertir a base64 para mostrar en la imagen
-        qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
-    }
-
     private async Task UpdateScore()
     {
         await hubConnection.SendAsync("UpdateScore", GroupName, team1Score, team2Score, team1Penalty, team2Penalty);
@@ -170,27 +160,17 @@
         await hubConnection.SendAsync("UpdateRound", GroupName, currentRound);
     }
 
-    private void IncrementTeam1Score()
+    private void AddPointsTeam1(int points)
     {
-        team1Score++;
+        team1Score += points;
+        actionHistory.Push(("Team1", points));
         UpdateScore();
     }
 
-    private void DecrementTeam1Score()
+    private void AddPointsTeam2(int points)
     {
-        if (team1Score > 0) team1Score--;
-        UpdateScore();
-    }
-
-    private void IncrementTeam2Score()
-    {
-        team2Score++;
-        UpdateScore();
-    }
-
-    private void DecrementTeam2Score()
-    {
-        if (team2Score > 0) team2Score--;
+        team2Score += points;
+        actionHistory.Push(("Team2", points));
         UpdateScore();
     }
 
@@ -232,19 +212,48 @@
         UpdateTimer();
     }
 
-    private void ResetTimer()
+    private void ResetRound()
     {
         timer.Stop();
+        timerMinutes = 2;
+        timerSeconds = 0;
         timerRunning = false;
-        timerMinutes = 1;
-        timerSeconds = 50;
         UpdateTimer();
+
+        if (currentRound < totalRounds)
+        {
+            currentRound++;
+            UpdateRound();
+        }
+    }
+
+    private void UndoLastAction()
+    {
+        if (actionHistory.Count > 0)
+        {
+            var lastAction = actionHistory.Pop();
+            if (lastAction.Team == "Team1")
+            {
+                team1Score -= lastAction.Points;
+                if (team1Score < 0) team1Score = 0;
+            }
+            else if (lastAction.Team == "Team2")
+            {
+                team2Score -= lastAction.Points;
+                if (team2Score < 0) team2Score = 0;
+            }
+            UpdateScore();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        await hubConnection.SendAsync("LeaveGroup", GroupName); // Dejar el grupo al cerrar el componente
-        await hubConnection.DisposeAsync();
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("LeaveGroup", GroupName);
+            await hubConnection.DisposeAsync();
+        }
+
         timer?.Dispose();
     }
 }
