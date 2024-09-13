@@ -1,7 +1,6 @@
 using Kytame.Client.Pages;
 using Kytame.Components;
 using Microsoft.AspNetCore.ResponseCompression;
-using Kytame.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +41,6 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Kytame.Client._Imports).Assembly);
 
-app.MapHub<ChatHub>("/chathub");
-app.MapHub<CounterHub>("/counterhub");
 app.MapHub<ScoreboardHub>("/scoreboardhub");
 
 

@@ -71,21 +71,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (string.IsNullOrWhiteSpace(GroupName))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("team1Name", out var team1))
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("t1", out var team1))
         {
             team1Name = team1;
         }
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("team2Name", out var team2))
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("t2", out var team2))
         {
             team2Name = team2;
-        }
-
-        if (string.IsNullOrWhiteSpace(GroupName))
-        {
-            GroupName = Guid.NewGuid().ToString();
-            Navigation.NavigateTo($"/scoreboard/{GroupName}", forceLoad: true);
-            return;
         }
 
         timer = new Timer(1000);

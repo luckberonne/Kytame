@@ -18,32 +18,42 @@
     </div>
 
     <button @onclick="StartGame" class="config-button">Iniciar Juego</button>
+
     @if (!string.IsNullOrEmpty(qrCodeUrl))
     {
         <div class="qr-container">
             <h2>QR Code for URL</h2>
-                <img src="@qrCodeUrl" alt="QR Code" />
+            <img src="@qrCodeUrl" alt="QR Code" />
         </div>
     }
+
     <button @onclick="SkipConnection" class="config-button">Omitir Conexión</button>
-
-
 </div>
 
 @code {
+    private string? groupName = "";
+
     private string? qrCodeUrl;
     private string team1Name = "Participante 1";
     private string team2Name = "Participante 2";
+    private HubConnection? hubConnection;
 
-    private async Task StartGame()
+    private string GenerateShortId(int length = 8)
     {
-        string groupName = Guid.NewGuid().ToString();
-        var uri = new Uri(Navigation.Uri);
-        var baseUri = new Uri(uri.GetLeftPart(UriPartial.Authority));
-        var qrCodeUrl = new Uri(baseUri, $"/scoreboard-control/{groupName}?team1Name={team1Name}&team2Name={team2Name}").ToString();
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var random = new Random();
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
 
-        GenerateQRCode(qrCodeUrl);
+    private async Task StartGamede()
+    {
+        var baseUri = new Uri(Navigation.Uri).GetLeftPart(UriPartial.Authority);
+        groupName = GenerateShortId();
+        var scoreboardUrl = $"/scoreboard-control/{groupName}?team1Name={team1Name}&team2Name={team2Name}";
+        qrCodeUrl = GenerateQRCode(baseUri + scoreboardUrl);
 
+        // Espera la conexión de clientes antes de proceder
         bool isConnected = await WaitForConnectionAsync(groupName, TimeSpan.FromMinutes(2));
 
         if (isConnected)
@@ -52,55 +62,55 @@
         }
         else
         {
-  
+            Console.WriteLine("No se detectaron clientes conectados dentro del tiempo límite.");
         }
     }
 
-    private void GenerateQRCode(string qrCodeUrl)
+    // Método que genera el código QR a partir de una URL
+    private string GenerateQRCode(string url)
     {
         using var qrGenerator = new QRCodeGenerator();
-        using var qrCodeData = qrGenerator.CreateQrCode(qrCodeUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
         using var qrCode = new PngByteQRCode(qrCodeData);
         var qrCodeBytes = qrCode.GetGraphic(20);
-
-        this.qrCodeUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+        return $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
     }
 
+    // Método que permite saltar la espera de conexión
     private void SkipConnection()
     {
-        string groupName = Guid.NewGuid().ToString();
-        Navigation.NavigateTo($"/scoreboard/{groupName}?team1Name={team1Name}&team2Name={team2Name}");
+        if (groupName == "")
+        {
+            groupName = GenerateShortId();
+        }
+        Navigation.NavigateTo($"/scoreboard/{groupName}?t1={team1Name}&t2={team2Name}");
     }
 
+    // Método que espera la conexión de clientes en el grupo especificado
     private async Task<bool> WaitForConnectionAsync(string groupName, TimeSpan timeout)
     {
         var cancellationTokenSource = new CancellationTokenSource(timeout);
-        bool isConnected = false;
 
         while (!cancellationTokenSource.Token.IsCancellationRequested)
         {
-            isConnected = await IsClientConnectedAsync(groupName);
-
-            if (isConnected)
+            if (await IsClientConnectedAsync(groupName))
             {
-                break;
+                return true;
             }
 
-            await Task.Delay(1000);
+            await Task.Delay(1000); // Espera 1 segundo antes de volver a intentar
         }
 
-        return isConnected;
+        return false; // No se conectaron clientes en el tiempo especificado
     }
 
+    // Método que comprueba si hay clientes conectados en el grupo
     private async Task<bool> IsClientConnectedAsync(string groupName)
     {
-        var hubConnection = new HubConnectionBuilder()
-            .WithUrl(new Uri(Navigation.ToAbsoluteUri("/scoreboardHub").ToString())) 
-            .Build();
+        await EnsureHubConnection();
 
         try
         {
-            await hubConnection.StartAsync();
             var result = await hubConnection.InvokeAsync<bool>("AreClientsConnected", groupName);
             return result;
         }
@@ -109,7 +119,25 @@
             Console.WriteLine($"Error checking client connection: {ex.Message}");
             return false;
         }
-        finally
+    }
+
+    // Método para asegurar la conexión con el Hub
+    private async Task EnsureHubConnection()
+    {
+        if (hubConnection == null)
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/scoreboardHub"))
+                .Build();
+
+            await hubConnection.StartAsync();
+        }
+    }
+
+    // Método que se invoca al finalizar el componente
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
         {
             await hubConnection.DisposeAsync();
         }

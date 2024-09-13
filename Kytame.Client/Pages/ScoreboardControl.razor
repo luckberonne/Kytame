@@ -1,12 +1,13 @@
 ﻿@page "/scoreboard-control/{GroupName}"
 @using Microsoft.AspNetCore.SignalR.Client
 @rendermode InteractiveWebAssembly
+@using Microsoft.AspNetCore.WebUtilities
 @using System.Timers
 @inject NavigationManager Navigation
 
 <div class="scoreboard-control-container">
     <div class="team-control red">
-        <h2>Participante 1</h2>
+        <h2>@team1Name</h2>
         <div class="controls">
             <button @onclick="() => AddPoints(ref team1Score, 1)" class="large-button">Punto +1</button>
             <button @onclick="() => AddPoints(ref team1Score, 2)" class="large-button">Punto +2</button>
@@ -15,15 +16,15 @@
             <button @onclick="() => AddPoints(ref team1Score, 5)" class="large-button">Punto +5</button>
 
             <!-- Línea divisoria -->
-            <div class="penalty-section">
-                <button @onclick="() => ModifyPenalty(ref team1Penalty, 1)" class="large-button">Penalty +</button>
-                <button @onclick="() => ModifyPenalty(ref team1Penalty, -1)" class="large-button">Penalty -</button>
-            </div>
+        </div>
+        <div class="controls">
+            <button @onclick="() => ModifyPenalty(ref team1Penalty, 1)" class="large-button">Penalty +</button>
+            <button @onclick="() => ModifyPenalty(ref team1Penalty, -1)" class="large-button">Penalty -</button>
         </div>
     </div>
 
     <div class="team-control blue">
-        <h2>Participante 2</h2>
+        <h2>@team2Name</h2>
         <div class="controls">
             <button @onclick="() => AddPoints(ref team2Score, 1)" class="large-button">Punto +1</button>
             <button @onclick="() => AddPoints(ref team2Score, 2)" class="large-button">Punto +2</button>
@@ -31,37 +32,38 @@
             <button @onclick="() => AddPoints(ref team2Score, 3)" class="large-button">Punto +3</button>
             <button @onclick="() => AddPoints(ref team2Score, 5)" class="large-button">Punto +5</button>
 
-            <!-- Línea divisoria -->
-            <div class="penalty-section">
-                <button @onclick="() => ModifyPenalty(ref team2Penalty, 1)" class="large-button">Penalty +</button>
-                <button @onclick="() => ModifyPenalty(ref team2Penalty, -1)" class="large-button">Penalty -</button>
+        </div>
+        <div class="controls">
+            <button @onclick="() => ModifyPenalty(ref team2Penalty, 1)" class="large-button">Penalty +</button>
+            <button @onclick="() => ModifyPenalty(ref team2Penalty, -1)" class="large-button">Penalty -</button>
+        </div>
+    </div>
+        <div class="timer-control">
+            <h2>Control de Temporizador</h2>
+            <div class="controls">
+                <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Parar" : "Empezar"))</button>
+                <button @onclick="ResetTimer" class="small-button">Reset</button>
+                <button @onclick="UndoLastAction" class="small-button">Deshacer</button>
             </div>
+            <div class="timer-display">
+                @timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")
+            </div>
+                <h2>Control de Round</h2>
+                <div class="controls">
+                    <button @onclick="PreviousRound" class="small-button" disabled="@isFirstRound">Anterior</button>
+                    <button @onclick="NextRound" class="small-button" disabled="@isLastRound">Siguiente</button>
+                </div>
         </div>
-    </div>
-    <div class="timer-control">
-        <h2>Control de Temporizador</h2>
-        <div class="controls">
-            <button @onclick="StartStopTimer" class="small-button">@((timerRunning ? "Parar Timer" : "Empezar Timer"))</button>
-            <button @onclick="ResetTimer" class="small-button">Reset Timer</button>
-            <button @onclick="UndoLastAction" class="small-button">Deshacer Acción</button>
-        </div>
-        <div class="timer-display">
-            @timerMinutes.ToString("D2"):@timerSeconds.ToString("D2")
-        </div>
-    </div>
 
-    <div class="round-control">
-        <h2>Control de Round</h2>
-        <div class="controls">
-            <button @onclick="PreviousRound" class="small-button" disabled="@isFirstRound">Anterior Round</button>
-            <button @onclick="NextRound" class="small-button" disabled="@isLastRound">Siguiente Round</button>
-        </div>
-    </div>
+
+
 </div>
 
 @code {
     [Parameter] public string GroupName { get; set; } = string.Empty;
 
+    private string team1Name = "Participante 1";
+    private string team2Name = "Participante 2";
     private int team1Score = 0;
     private int team2Score = 0;
     private int team1Penalty = 0;
@@ -82,6 +84,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (string.IsNullOrWhiteSpace(GroupName))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("t1", out var team1))
+        {
+            team1Name = team1;
+        }
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("t2", out var team2))
+        {
+            team2Name = team2;
+        }
+
         timer = new Timer(1000);
         timer.Elapsed += async (sender, e) => await OnTimerElapsed();
 
@@ -185,8 +203,8 @@
     {
         timer.Stop();
         timerRunning = false;
-        timerMinutes = 1;
-        timerSeconds = 50;
+        timerMinutes = 2;
+        timerSeconds = 00;
         UpdateTimer();
     }
 
